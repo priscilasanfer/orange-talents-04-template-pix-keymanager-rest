@@ -1,5 +1,6 @@
 package br.com.zupacademy.priscila.shared.grpc
 
+import br.com.zupacademy.priscila.KeyManagerDeletaServiceGrpc
 import br.com.zupacademy.priscila.KeyManagerRegistraServiceGrpc
 import io.grpc.ManagedChannel
 import io.micronaut.context.annotation.Factory
@@ -11,4 +12,7 @@ class KeyManagerGrpcFactory(@GrpcChannel("KeyManager") val channel: ManagedChann
 
     @Singleton
     fun registraChave() = KeyManagerRegistraServiceGrpc.newBlockingStub(channel)
+
+    @Singleton
+    fun deletaChave() = KeyManagerDeletaServiceGrpc.newBlockingStub(channel)
 }
