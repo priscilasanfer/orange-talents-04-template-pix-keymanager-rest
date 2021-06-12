@@ -1,9 +1,6 @@
 package br.com.zupacademy.priscila.carrega
 
-import br.com.zupacademy.priscila.CarregaChavePixResponse
-import br.com.zupacademy.priscila.KeymanagerCarregaServiceGrpc
-import br.com.zupacademy.priscila.TipoDeChave
-import br.com.zupacademy.priscila.TipoDeConta
+import br.com.zupacademy.priscila.*
 import br.com.zupacademy.priscila.shared.grpc.KeyManagerGrpcFactory
 import com.google.protobuf.Timestamp
 import io.micronaut.context.annotation.Factory
@@ -28,6 +25,9 @@ internal class CarregaChavePixControllerTest {
 
     @field:Inject
     lateinit var carregaChaveStub: KeymanagerCarregaServiceGrpc.KeymanagerCarregaServiceBlockingStub
+
+    @field:Inject
+    lateinit var listaChaveStub: KeymanagerListaServiceGrpc.KeymanagerListaServiceBlockingStub
 
     @field:Inject
     @field:Client("/")
@@ -61,33 +61,87 @@ internal class CarregaChavePixControllerTest {
         Assertions.assertNotNull(response.body())
     }
 
+    @Test
+    internal fun `deve listar todas as chaves pix existente`() {
 
-    private fun carregaChavePixResponse(clienteId: String, pixId: String) =
+        val clienteId = UUID.randomUUID().toString()
+
+        val respostaGrpc = listaChavePixResponse(clienteId)
+
+        given(listaChaveStub.lista(Mockito.any())).willReturn(respostaGrpc)
+
+
+        val request = HttpRequest.GET<Any>("/api/v1/clientes/$clienteId/pix/")
+        val response = client.toBlocking().exchange(request, List::class.java)
+
+        Assertions.assertEquals(HttpStatus.OK, response.status)
+        Assertions.assertNotNull(response.body())
+        Assertions.assertEquals(response.body()!!.size, 2)
+    }
+
+    private fun carregaChavePixResponse(clientId: String, pixId: String) =
         CarregaChavePixResponse.newBuilder()
-            .setClienteId(clienteId)
+            .setClienteId(clientId)
             .setPixId(pixId)
-            .setChave(CarregaChavePixResponse.ChavePix
-                .newBuilder()
-                .setTipo(TIPO_DE_CHAVE_EMAIL)
-                .setChave(CHAVE_EMAIL)
-                .setConta(
-                    CarregaChavePixResponse.ChavePix.ContaInfo.newBuilder()
-                        .setTipo(CONTA_CORRENTE)
-                        .setInstituicao(INSTITUICAO)
-                        .setNomeDoTitular(TITULAR)
-                        .setCpfDoTitular(DOCUMENTO_DO_TITULAR)
-                        .setAgencia(AGENCIA)
-                        .setNumeroDaConta(NUMERO_DA_CONTA)
-                        .build()
-                )
-                .setCriadaEm(CHAVE_CRIADA_EM.let {
-                    val createdAt = it.atZone(ZoneId.of("UTC")).toInstant()
-                    Timestamp.newBuilder()
-                        .setSeconds(createdAt.epochSecond)
-                        .setNanos(createdAt.nano)
-                        .build()
-                })
+            .setChave(
+                CarregaChavePixResponse.ChavePix
+                    .newBuilder()
+                    .setTipo(TIPO_DE_CHAVE_EMAIL)
+                    .setChave(CHAVE_EMAIL)
+                    .setConta(
+                        CarregaChavePixResponse.ChavePix.ContaInfo.newBuilder()
+                            .setTipo(CONTA_CORRENTE)
+                            .setInstituicao(INSTITUICAO)
+                            .setNomeDoTitular(TITULAR)
+                            .setCpfDoTitular(DOCUMENTO_DO_TITULAR)
+                            .setAgencia(AGENCIA)
+                            .setNumeroDaConta(NUMERO_DA_CONTA)
+                            .build()
+                    )
+                    .setCriadaEm(CHAVE_CRIADA_EM.let {
+                        val createdAt = it.atZone(ZoneId.of("UTC")).toInstant()
+                        Timestamp.newBuilder()
+                            .setSeconds(createdAt.epochSecond)
+                            .setNanos(createdAt.nano)
+                            .build()
+                    })
             ).build()
+
+    private fun listaChavePixResponse(clientId: String): ListaChavesPixResponse {
+        val chaveEmail = ListaChavesPixResponse.ChavePix.newBuilder()
+            .setPixId(UUID.randomUUID().toString())
+            .setTipo(TIPO_DE_CHAVE_EMAIL)
+            .setChave(CHAVE_EMAIL)
+            .setTipoDeConta(CONTA_CORRENTE)
+            .setCriadaEm(CHAVE_CRIADA_EM.let {
+                val createdAt = it.atZone(ZoneId.of("UTC")).toInstant()
+                Timestamp.newBuilder()
+                    .setSeconds(createdAt.epochSecond)
+                    .setNanos(createdAt.nano)
+                    .build()
+            })
+            .build()
+
+        val chaveCelular = ListaChavesPixResponse.ChavePix.newBuilder()
+            .setPixId(UUID.randomUUID().toString())
+            .setTipo(TIPO_DE_CHAVE_CELULAR)
+            .setChave(CHAVE_CELULAR)
+            .setTipoDeConta(CONTA_CORRENTE)
+            .setCriadaEm(CHAVE_CRIADA_EM.let {
+                val createdAt = it.atZone(ZoneId.of("UTC")).toInstant()
+                Timestamp.newBuilder()
+                    .setSeconds(createdAt.epochSecond)
+                    .setNanos(createdAt.nano)
+                    .build()
+            })
+            .build()
+
+
+        return ListaChavesPixResponse.newBuilder()
+            .setClientId(clientId)
+            .addAllChaves(listOf(chaveEmail, chaveCelular))
+            .build()
+    }
 
     @Factory
     @Replaces(factory = KeyManagerGrpcFactory::class)
@@ -96,6 +150,10 @@ internal class CarregaChavePixControllerTest {
         @Singleton
         fun stubDetalhesMock() =
             Mockito.mock(KeymanagerCarregaServiceGrpc.KeymanagerCarregaServiceBlockingStub::class.java)
+
+        @Singleton
+        fun stubListaMock() =
+            Mockito.mock(KeymanagerListaServiceGrpc.KeymanagerListaServiceBlockingStub::class.java)
     }
 
 }
