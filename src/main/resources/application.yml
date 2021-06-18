@@ -9,6 +9,15 @@ grpc:
   channels:
     KeyManager:
       address: '${KEY_MANAGER_HOST:localhost}:${KEY_MANAGER_PORT:50051}'
+  server:
+    health:
+      enabled: true
+
+endpoints:
+  health:
+    enabled: true
+    sensitive: false
+    details-visible: ANONYMOUS
 
 jackson:
   serialization:
