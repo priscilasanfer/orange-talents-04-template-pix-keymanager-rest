@@ -8,7 +8,8 @@ grpc:
     max-retry-attemps: 10
   channels:
     KeyManager:
-      address: '${KEY_MANAGER_HOST:localhost}:${KEY_MANAGER_PORT:50051}'
+      address: '${KEY_MANAGER_HOST:host.docker.internal}:${KEY_MANAGER_PORT:50051}' # docker
+      # address: '${KEY_MANAGER_HOST:localhost}:${KEY_MANAGER_PORT:50051}' # local
   server:
     health:
       enabled: true
